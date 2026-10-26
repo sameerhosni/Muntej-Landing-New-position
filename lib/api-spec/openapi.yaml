@@ -1,0 +1,164 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /early-access:
+    post:
+      operationId: joinEarlyAccess
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LeadInput"
+      responses:
+        "201":
+          description: Lead saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Success"
+        "400": { description: Invalid input }
+        "429": { description: Too many requests }
+  /admin/login:
+    post:
+      operationId: adminLogin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminCredentials"
+      responses:
+        "200":
+          description: Session cookie set
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Success"
+        "401": { description: Invalid password }
+  /admin/logout:
+    post:
+      operationId: adminLogout
+      responses:
+        "200":
+          description: Session revoked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Success"
+  /admin/leads:
+    get:
+      operationId: getAdminLeads
+      responses:
+        "200":
+          description: Most recent leads
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Lead"
+        "401": { description: Admin session required }
+  /admin/leads.csv:
+    get:
+      operationId: exportLeads
+      responses:
+        "200":
+          description: CSV export
+          content:
+            text/csv:
+              schema: { type: string }
+        "401": { description: Admin session required }
+  /events:
+    post:
+      operationId: trackEvent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnalyticsInput"
+      responses:
+        "200":
+          description: Event recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Success"
+components:
+  schemas:
+    Success:
+      type: object
+      required: [ok]
+      properties:
+        ok: { type: boolean }
+    AdminCredentials:
+      type: object
+      required: [password]
+      properties:
+        password: { type: string, minLength: 1, maxLength: 256 }
+    LeadInput:
+      type: object
+      required: [name, company, whatsapp, language]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120 }
+        company: { type: string, minLength: 1, maxLength: 160 }
+        role: { type: string, minLength: 1, maxLength: 120 }
+        teamSize: { type: string, enum: ["1-5", "6-15", "16-50", "51-100", "100+"] }
+        whatsapp: { type: string, pattern: '^\+9665[0-9]{8}$' }
+        language: { type: string, enum: [ar, en] }
+        utmSource: { type: string, maxLength: 200 }
+        utmMedium: { type: string, maxLength: 200 }
+        utmCampaign: { type: string, maxLength: 200 }
+        website: { type: string, maxLength: 200 }
+    Lead:
+      allOf:
+        - $ref: "#/components/schemas/LeadInput"
+        - type: object
+          required: [id, createdAt]
+          properties:
+            id: { type: integer }
+            createdAt: { type: string, format: date-time }
+    AnalyticsInput:
+      type: object
+      required: [event, language]
+      properties:
+        event:
+          type: string
+          enum: [cta_join_click, form_submit_success, whatsapp_click, language_switch, demo_view]
+        language: { type: string, enum: [ar, en] }
+        section: { type: string, maxLength: 80 }
+        utmSource: { type: string, maxLength: 200 }
+        utmMedium: { type: string, maxLength: 200 }
+        utmCampaign: { type: string, maxLength: 200 }
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+

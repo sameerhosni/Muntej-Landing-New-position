@@ -1,0 +1,40 @@
+kind = "web"
+previewPath = "/"
+title = "Muntej — مُنتج"
+description = "Arabic-first bilingual early-access marketing website for Muntej, an AI follow-up assistant for Saudi operational teams in WhatsApp."
+version = "1.0.0"
+id = "artifacts/muntej-website"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 25273
+
+[services.development]
+run = "pnpm --filter @workspace/muntej-website run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/muntej-website", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/muntej-website/dist/public"
+
+[[services.production.rewrites]]
+from = "/en"
+to = "/en/index.html"
+[[services.production.rewrites]]
+from = "/privacy"
+to = "/privacy/index.html"
+[[services.production.rewrites]]
+from = "/en/privacy"
+to = "/en/privacy/index.html"
+[[services.production.rewrites]]
+from = "/admin/leads"
+to = "/admin/leads/index.html"
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25273"
+BASE_PATH = "/"

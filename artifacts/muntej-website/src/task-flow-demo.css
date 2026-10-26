@@ -1,0 +1,50 @@
+.tf{position:relative;z-index:1;max-width:64rem;margin-inline:auto;width:100%}
+.tf b{display:block;font-weight:700;color:var(--ink)}
+.tf i{display:block;font-style:normal;color:#4f566b;font-size:.76rem;line-height:1.35}
+.tf-map{display:none}
+.tf-stack{list-style:none;margin:0;padding:0;display:grid;gap:1.6rem}
+.tf-stack>li{position:relative;display:grid;gap:.5rem}
+.tf-stack>li:not(:last-child)::after{content:'';position:absolute;inset-inline-start:1.2rem;top:100%;height:1.6rem;width:2px;background:repeating-linear-gradient(#b9baff 0 5px,transparent 5px 10px)}
+.tf-stack>li:not(:last-child)::before{content:'';position:absolute;inset-inline-start:calc(1.2rem - 3px);top:100%;width:8px;height:8px;border-radius:50%;background:var(--brand);opacity:0}
+.tf-run .tf-stack>li:not(:last-child)::before{animation:tf-drop 2.4s ease-in-out infinite}
+@keyframes tf-drop{0%{transform:translateY(0);opacity:0}15%{opacity:1}85%{opacity:1}100%{transform:translateY(1.5rem);opacity:0}}
+.tf-stack h3{font-size:.78rem;font-weight:700;color:#a21fd6}
+.tf-chips{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:.5rem}
+.tf-chips li,.tf-eng-card,.tf-decide span{display:flex;align-items:center;gap:.55rem;background:#fff;border:1px solid var(--r-line);border-radius:14px;padding:.55rem .7rem;font-size:.86rem}
+.tf-chips li svg{flex:none}
+.tf-chips-team{grid-template-columns:1fr 1fr 1fr}
+.tf-chips-team li{flex-direction:column;align-items:flex-start;gap:.2rem;color:var(--brand-deep)}
+.tf-eng-card{border-color:rgba(91,92,255,.45);background:linear-gradient(135deg,#fff,#f1eeff);box-shadow:0 14px 30px -22px rgba(91,92,255,.7)}
+.tf-decide{display:grid;gap:.5rem}
+.tf-decide span{flex-wrap:wrap;font-weight:700;color:var(--ink)}
+.tf-decide i{flex-basis:100%;font-weight:400}
+.tf-decide .ok{border-color:#bfe4cf;background:#f1fbf6;color:#14633f}
+.tf-decide .rev{border-color:#f0d7a8;background:#fff8ea;color:#8a5a00}
+.tf-foot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.6rem;margin-top:1.1rem}
+.tf-foot p{margin:0;font-size:.78rem;color:#4f566b;max-width:38rem}
+@media(max-width:380px){.tf-chips{grid-template-columns:1fr}.tf-chips-team{grid-template-columns:1fr}}
+
+@media(min-width:960px){
+.tf-stack{display:none}
+.tf-map{display:block;position:relative;width:100%;aspect-ratio:1000/460}
+.tf-svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.tf-line{fill:none;stroke:#c9caff;stroke-width:1.4}
+.tf-line-ok{stroke:#7fd1a4}
+.tf-line-back{stroke:#e8b960;stroke-dasharray:5 5}
+.tf-dot{fill:#6d5cff}.tf-dot.back{fill:#c13cff}.tf-dot.ok{fill:#28a96b}.tf-dot.rev{fill:#e0a02e}
+.tf-node{position:absolute;transform:translate(-50%,-50%);display:flex;align-items:center;gap:.5rem;background:#fff;border:1px solid var(--r-line);border-radius:14px;padding:.4rem .6rem;box-shadow:0 12px 26px -20px rgba(91,92,255,.55);font-size:.8rem}
+.tf-src{width:19%;justify-content:flex-start}
+.tf-src svg{flex:none}
+.tf-team{width:13%;color:var(--brand-deep)}
+.tf-team svg{flex:none}
+.tf-engine{width:11.5%;aspect-ratio:1;flex-direction:column;justify-content:center;text-align:center;gap:.1rem;border-radius:50%;border:2px solid rgba(91,92,255,.5);background:radial-gradient(circle,#fff 55%,#efecff);box-shadow:0 0 0 10px rgba(91,92,255,.08),0 24px 40px -22px rgba(91,92,255,.7)}
+.tf-engine img{width:2rem;height:2rem;object-fit:contain}
+.tf-engine i{font-size:.68rem}
+.tf-approve{width:13%;flex-direction:column;text-align:center;gap:.15rem;border-color:#f0d7a8;background:#fffaf0;color:#8a5a00}
+.tf-approve i{font-size:.7rem}
+.tf-done{width:12%;flex-direction:column;text-align:center;gap:.15rem;border-color:#bfe4cf;background:#f1fbf6;color:#14633f}
+.tf-tag{position:absolute;transform:translate(-50%,-50%);font-size:.72rem;font-weight:700;padding:.1rem .5rem;border-radius:999px;background:#fff;white-space:nowrap}
+.tf-tag-ok{color:#14633f;border:1px solid #bfe4cf}
+.tf-tag-back{color:#8a5a00;border:1px solid #f0d7a8}
+}
+@media(prefers-reduced-motion:reduce){.tf-stack>li::before{animation:none!important}}
