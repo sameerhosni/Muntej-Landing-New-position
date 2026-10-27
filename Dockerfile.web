@@ -1,0 +1,12 @@
+FROM node:24-slim AS build
+RUN corepack enable && corepack prepare pnpm@10.26.1 --activate
+WORKDIR /repo
+COPY . .
+RUN pnpm install --frozen-lockfile
+ENV NODE_ENV=production
+RUN PORT=3000 BASE_PATH=/assistant/ pnpm --filter @workspace/muntej-website run build
+
+FROM nginx:1.27-alpine
+COPY deploy/nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /repo/artifacts/muntej-website/dist/public /usr/share/nginx/html/assistant
+EXPOSE 80
