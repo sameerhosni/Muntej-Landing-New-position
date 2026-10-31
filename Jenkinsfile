@@ -92,6 +92,7 @@ spec:
                               --destination=$REGISTRY/$WEB_IMAGE:$IMAGE_TAG \
                               --snapshot-mode=time \
                               --use-new-run \
+                              --ignore-path=/busybox \
                               --cleanup
                         '''
                     }
@@ -115,6 +116,7 @@ spec:
                               --destination=$REGISTRY/$API_IMAGE:$IMAGE_TAG \
                               --snapshot-mode=time \
                               --use-new-run \
+                              --ignore-path=/busybox \
                               --cleanup
                         '''
                     }
@@ -140,6 +142,19 @@ spec:
                                   --dry-run=client -o yaml | kubectl apply -f -
                             '''
                         }
+                        withCredentials([
+                            string(credentialsId: 'assistant-database-url', variable: 'DB_URL'),
+                            string(credentialsId: 'assistant-session-secret', variable: 'SESSION_SECRET'),
+                            string(credentialsId: 'assistant-admin-password', variable: 'ADMIN_PASSWORD')
+                        ]) {
+                            sh '''
+                                kubectl -n $K8S_NAMESPACE create secret generic prod-adeed-assistant-secrets \
+                                  --from-literal=DATABASE_URL="$DB_URL" \
+                                  --from-literal=SESSION_SECRET="$SESSION_SECRET" \
+                                  --from-literal=ADMIN_PASSWORD="$ADMIN_PASSWORD" \
+                                  --dry-run=client -o yaml | kubectl apply -f -
+                            '''
+                        }
                         sh '''
                             sed -i "s|<TAG>|$IMAGE_TAG|g" $YAML_DIR/deployment.yaml
                             kubectl -n $K8S_NAMESPACE apply -f $YAML_DIR/
@@ -153,14 +168,22 @@ spec:
     }
 
     post {
-        always {
-            cleanWs()
-        }
-        success {
-            echo 'Pipeline succeeded'
-        }
         failure {
-            echo 'Pipeline failed'
+            container('jenkins-agent') {
+                sh '''
+                    echo "===== PODS ====="
+                    kubectl -n $K8S_NAMESPACE get pods -o wide | grep -E "NAME|prod-adeed-assistant" || true
+                    echo "===== RECENT EVENTS ====="
+                    kubectl -n $K8S_NAMESPACE get events --sort-by=.lastTimestamp | grep -i assistant | tail -20 || true
+                    echo "===== API LOGS ====="
+                    kubectl -n $K8S_NAMESPACE logs deployment/prod-adeed-assistant-api --tail=50 || true
+                    echo "===== WEB LOGS ====="
+                    kubectl -n $K8S_NAMESPACE logs deployment/prod-adeed-assistant-web --tail=30 || true
+                '''
+            }
+        }
+        cleanup {
+            cleanWs()
         }
     }
 }
