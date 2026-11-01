@@ -23,7 +23,7 @@ server {
     }
 
     location /assistant/ {
-        try_files $uri $uri/ /assistant/index.html;
+        try_files $uri $uri/index.html /assistant/index.html;
     }
 
     location = /healthz {
