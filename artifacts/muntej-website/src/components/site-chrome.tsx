@@ -61,8 +61,8 @@ export function Header({ lang, t, home = true, switchTo }: { lang: Lang; t: Tran
       <header className="m-header">
         <div className="m-wrap m-header-in">
            <Link href={base(lang) || '/'} aria-label={t.brand} className="flex items-center gap-2 shrink-0" data-testid="link-logo">
-             <img src={`${import.meta.env.BASE_URL}brand/favicon.png`} alt="" width={34} height={34} />
-            <img src={logo} alt={t.logoAlt} width={120} height={34} style={{ height: 34, width: 'auto' }} />
+             <img src={`${import.meta.env.BASE_URL}brand/favicon.png`} alt="" width={34} height={34} className="m-logo-mark" />
+            <img src={logo} alt={t.logoAlt} width={120} height={34} className="m-header-logo" style={{ height: 34, width: 'auto' }} />
           </Link>
           <nav className="m-nav" aria-label={t.nav.label}>
             {nav.map(([id, label]) => (

@@ -22,7 +22,25 @@
 .tf-decide .rev{border-color:#f0d7a8;background:#fff8ea;color:#8a5a00}
 .tf-foot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.6rem;margin-top:1.1rem}
 .tf-foot p{margin:0;font-size:.78rem;color:#4f566b;max-width:38rem}
-@media(max-width:380px){.tf-chips{grid-template-columns:1fr}.tf-chips-team{grid-template-columns:1fr}}
+@media(max-width:599px){
+.tf-stack{gap:1.1rem}
+.tf-stack h3{display:flex;align-items:center;gap:.4rem;margin-bottom:.1rem}
+.tf-chips{gap:.4rem}
+.tf-chips li{min-width:0;padding:.45rem .55rem;gap:.4rem;border-radius:12px;font-size:.8rem}
+.tf-chips li>span{min-width:0}
+.tf-chips b{font-size:.8rem;line-height:1.3;overflow-wrap:anywhere}
+.tf-chips i{font-size:.7rem}
+.tf-chips li svg{width:18px;height:18px}
+.tf-chips:not(.tf-chips-team) li:last-child:nth-child(odd){grid-column:1/-1}
+.tf-chips-team{grid-template-columns:repeat(3,minmax(0,1fr))}
+.tf-chips-team li{align-items:center;text-align:center;padding:.45rem .3rem}
+.tf-chips-team i{display:none}
+.tf-eng-card{padding:.5rem .7rem}
+.tf-eng-card img{width:28px;height:28px}
+.tf-decide{grid-template-columns:1fr 1fr;gap:.4rem}
+.tf-decide span{padding:.5rem .6rem;font-size:.82rem;gap:.35rem;align-items:flex-start}
+.tf-decide i{font-size:.7rem}
+}
 
 @media(min-width:960px){
 .tf-stack{display:none}

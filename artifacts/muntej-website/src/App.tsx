@@ -8,7 +8,10 @@ import AdminLeads from '@/pages/admin-leads';
 import { captureUtm } from '@/lib/site';
 import { translations, type Lang } from '@/translations';
 import { Route, Switch, useLocation, Router as WouterRouter } from 'wouter';
+import { setBaseUrl } from '@workspace/api-client-react';
 
+// Keep API requests on the same mount as the website (e.g. /assistant/).
+setBaseUrl(import.meta.env.BASE_URL);
 const queryClient = new QueryClient();
 
 function RoutedErrorBoundary({ children, lang }: { children: ReactNode; lang: Lang }) {
