@@ -259,19 +259,34 @@ export default function Home({ lang }: { lang: Lang }) {
           </div>
         </section>
 
-        {/* Mobile app coming soon */}
+        {/* Mobile app availability */}
         <section className="r-sec r-mob-sec" id="mobile-app" aria-labelledby="mobile-app-title">
           <div className="m-wrap">
             <div className="r-mob">
-              <figure className="r-mob-fig">
-                <img src={shot('home')} alt={t.mobileApp.alt} width={473} height={1024} loading="lazy" decoding="async" />
-                <figcaption>{t.mobileApp.caption}</figcaption>
-              </figure>
+              <div className="r-mob-gallery">
+                <div className="r-mob-screens">
+                  {['home', 'decisions', 'brief'].map((key) => (
+                    <figure className="r-mob-fig" key={key}>
+                      <button type="button" className="r-mob-preview" onClick={() => setOpenKey(key)} aria-label={`${t.showcase.openScreen}: ${item(key).title}`}>
+                        <img src={shot(key)} alt={item(key).alt} width={473} height={1024} loading="lazy" decoding="async" />
+                      </button>
+                      <figcaption>{item(key).title}</figcaption>
+                    </figure>
+                  ))}
+                </div>
+                <p className="r-mob-gallery-note">{t.mobileApp.caption}</p>
+              </div>
               <div>
                 <span className="r-eyebrow">{t.mobileApp.eyebrow}</span>
                 <h2 className="r-panel-title" id="mobile-app-title">{t.mobileApp.title}</h2>
                 <p className="r-mob-body">{t.mobileApp.body}</p>
-                <a href="#early-access" className="m-btn m-btn-primary" onClick={() => track('cta_join_click', 'mobile-app')} data-testid="button-cta-mobile-app">{t.cta}</a>
+                <div className="r-mob-downloads">
+                  <a href="https://play.google.com/store/apps/details?id=sa.muntej.app&hl=en" target="_blank" rel="noopener noreferrer" className="m-btn m-btn-primary" data-testid="button-download-android">
+                    <svg width="18" height="20" viewBox="0 0 18 20" fill="currentColor" aria-hidden="true"><path d="M1 1.2v17.6L16.2 10 1 1.2Z" /></svg>
+                    {t.mobileApp.androidCta}
+                  </a>
+                  <span className="r-mob-ios">{t.mobileApp.iosSoon}</span>
+                </div>
               </div>
             </div>
           </div>
