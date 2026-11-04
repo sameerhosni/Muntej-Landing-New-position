@@ -21,12 +21,22 @@ spec:
       effect: NoSchedule
   imagePullSecrets:
     - name: regcred
+  volumes:
+    - name: kaniko-secret
+      secret:
+        secretName: regcred
+        items:
+          - key: .dockerconfigjson
+            path: config.json
   containers:
     - name: kaniko
       image: gcr.io/kaniko-project/executor:v1.24.0-debug
       tty: true
       command:
         - /busybox/cat
+      volumeMounts:
+        - name: kaniko-secret
+          mountPath: /kaniko/.docker
       resources:
         limits:
           cpu: "2000m"
@@ -57,10 +67,10 @@ spec:
     }
 
     environment {
-        REGISTRY      = "ghcr.io/khaledmmahmoud"
-        WEB_IMAGE     = "muntej-assistant-web"
-        API_IMAGE     = "muntej-assistant-api"
-        YAML_BRANCH   = "main"
+        ECR_URL       = "180526211356.dkr.ecr.eu-central-1.amazonaws.com"
+        WEB_IMAGE     = "t2hub/muntej-assistant-web"
+        API_IMAGE     = "t2hub/muntej-assistant-api"
+        YAML_BRANCH   = "feature/assistant-cluster"
         YAML_REPO     = "https://x-bitbucket-api-token-auth@bitbucket.org/t2pms/devops_repo.git"
         K8S_NAMESPACE = "prod-adeed"
         YAML_DIR      = "k8s-manifests/apps/adeed_assistant/prod"
@@ -76,50 +86,20 @@ spec:
             }
         }
 
-        stage('Build Website Image') {
+        stage('Build Images') {
             environment {
                 PATH = "/busybox:/kaniko:$PATH"
             }
             steps {
                 container(name: 'kaniko', shell: '/busybox/sh') {
-                    withCredentials([usernamePassword(credentialsId: 'ghcr-khaled', usernameVariable: 'GHCR_USER', passwordVariable: 'GHCR_TOKEN')]) {
-                        sh '''
-                            mkdir -p /kaniko/ghcr
-                            printf '{"auths":{"ghcr.io":{"username":"%s","password":"%s"}}}' "$GHCR_USER" "$GHCR_TOKEN" > /kaniko/ghcr/config.json
-                            DOCKER_CONFIG=/kaniko/ghcr /kaniko/executor \
-                              --context=./ \
-                              --dockerfile=Dockerfile.web \
-                              --destination=$REGISTRY/$WEB_IMAGE:$IMAGE_TAG \
-                              --snapshot-mode=time \
-                              --use-new-run \
-                              --ignore-path=/busybox \
-                              --cleanup
-                        '''
-                    }
-                }
-            }
-        }
-
-        stage('Build API Image') {
-            environment {
-                PATH = "/busybox:/kaniko:$PATH"
-            }
-            steps {
-                container(name: 'kaniko', shell: '/busybox/sh') {
-                    withCredentials([usernamePassword(credentialsId: 'ghcr-khaled', usernameVariable: 'GHCR_USER', passwordVariable: 'GHCR_TOKEN')]) {
-                        sh '''
-                            mkdir -p /kaniko/ghcr
-                            printf '{"auths":{"ghcr.io":{"username":"%s","password":"%s"}}}' "$GHCR_USER" "$GHCR_TOKEN" > /kaniko/ghcr/config.json
-                            DOCKER_CONFIG=/kaniko/ghcr /kaniko/executor \
-                              --context=./ \
-                              --dockerfile=Dockerfile.api \
-                              --destination=$REGISTRY/$API_IMAGE:$IMAGE_TAG \
-                              --snapshot-mode=time \
-                              --use-new-run \
-                              --ignore-path=/busybox \
-                              --cleanup
-                        '''
-                    }
+                    sh '''
+                        /kaniko/executor --context=./ --dockerfile=Dockerfile.web \
+                          --destination=$ECR_URL/$WEB_IMAGE:$IMAGE_TAG \
+                          --snapshot-mode=time --use-new-run --ignore-path=/busybox --cleanup
+                        /kaniko/executor --context=./ --dockerfile=Dockerfile.api \
+                          --destination=$ECR_URL/$API_IMAGE:$IMAGE_TAG \
+                          --snapshot-mode=time --use-new-run --ignore-path=/busybox --cleanup
+                    '''
                 }
             }
         }
@@ -128,38 +108,18 @@ spec:
             steps {
                 container('jenkins-agent') {
                     dir('devops') {
-                        git(
-                            branch: env.YAML_BRANCH,
-                            credentialsId: 'bb-devops-sa',
-                            url: env.YAML_REPO
-                        )
-                        withCredentials([usernamePassword(credentialsId: 'ghcr-khaled', usernameVariable: 'GHCR_USER', passwordVariable: 'GHCR_TOKEN')]) {
-                            sh '''
-                                kubectl -n $K8S_NAMESPACE create secret docker-registry ghcr-pull \
-                                  --docker-server=ghcr.io \
-                                  --docker-username="$GHCR_USER" \
-                                  --docker-password="$GHCR_TOKEN" \
-                                  --dry-run=client -o yaml | kubectl apply -f -
-                            '''
-                        }
-                        withCredentials([
-                            string(credentialsId: 'assistant-database-url', variable: 'DB_URL'),
-                            string(credentialsId: 'assistant-session-secret', variable: 'SESSION_SECRET'),
-                            string(credentialsId: 'assistant-admin-password', variable: 'ADMIN_PASSWORD')
-                        ]) {
-                            sh '''
-                                kubectl -n $K8S_NAMESPACE create secret generic prod-adeed-assistant-secrets \
-                                  --from-literal=DATABASE_URL="$DB_URL" \
-                                  --from-literal=SESSION_SECRET="$SESSION_SECRET" \
-                                  --from-literal=ADMIN_PASSWORD="$ADMIN_PASSWORD" \
-                                  --dry-run=client -o yaml | kubectl apply -f -
-                            '''
-                        }
+                        git(branch: env.YAML_BRANCH, credentialsId: 'bb-devops-sa', url: env.YAML_REPO)
                         sh '''
+                            set -e
                             sed -i "s|<TAG>|$IMAGE_TAG|g" $YAML_DIR/deployment.yaml
+                            if grep -q '<TAG>' $YAML_DIR/deployment.yaml; then
+                                echo "ERROR: <TAG> was not replaced"; exit 1
+                            fi
+                            grep -n 'image:' $YAML_DIR/deployment.yaml
                             kubectl -n $K8S_NAMESPACE apply -f $YAML_DIR/
-                            kubectl -n $K8S_NAMESPACE rollout status deployment/prod-adeed-assistant-web --timeout=180s
+                            kubectl -n $K8S_NAMESPACE rollout status statefulset/prod-adeed-assistant-postgres --timeout=300s
                             kubectl -n $K8S_NAMESPACE rollout status deployment/prod-adeed-assistant-api --timeout=180s
+                            kubectl -n $K8S_NAMESPACE rollout status deployment/prod-adeed-assistant-web --timeout=180s
                         '''
                     }
                 }
@@ -175,6 +135,8 @@ spec:
                     kubectl -n $K8S_NAMESPACE get pods -o wide | grep -E "NAME|prod-adeed-assistant" || true
                     echo "===== RECENT EVENTS ====="
                     kubectl -n $K8S_NAMESPACE get events --sort-by=.lastTimestamp | grep -i assistant | tail -20 || true
+                    echo "===== POSTGRES LOGS ====="
+                    kubectl -n $K8S_NAMESPACE logs statefulset/prod-adeed-assistant-postgres --tail=30 || true
                     echo "===== API LOGS ====="
                     kubectl -n $K8S_NAMESPACE logs deployment/prod-adeed-assistant-api --tail=50 || true
                     echo "===== WEB LOGS ====="
