@@ -59,7 +59,13 @@ export default function Home({ lang }: { lang: Lang }) {
   const base = import.meta.env.BASE_URL;
   const shot = (key: string) => `${base}screens/muntej-${key}-${lang}.webp`;
   const item = (key: string) => t.showcase.items.find((s) => s.key === key)!;
-  const opened = openKey ? item(openKey) : null;
+  type ShotKey = keyof typeof t.differentiators.shots;
+  const adv = (key: string, kind: 'excerpt' | 'full') => `${base}screens/advantages/${key}-${kind}.webp`;
+  const isActual = !!openKey?.startsWith('adv:');
+  const actualKey = isActual ? (openKey!.slice(4) as ShotKey) : null;
+  const actualShot = actualKey ? t.differentiators.shots[actualKey] : null;
+  const opened = openKey && !isActual ? t.showcase.items.find((s) => s.key === openKey) ?? null : null;
+  const openedTitle = actualShot?.title ?? opened?.title;
   const split = t.hero.title.match(/^(.*?(?:…|\.))\s*(.+)$/s);
 
   useEffect(() => {
@@ -74,9 +80,13 @@ export default function Home({ lang }: { lang: Lang }) {
   }, []);
 
   const card = (d: (typeof t.differentiators.items)[number], i: number) => {
-    const it = item(d.screen);
+    const ak = d.actual as ShotKey | '';
+    const shotMeta = ak ? t.differentiators.shots[ak] : null;
+    const it = t.showcase.items.find((s) => s.key === d.screen);
+    if (!shotMeta && !it) throw new Error(`Missing advantage screen: ${d.screen}`);
+    const label = shotMeta ? shotMeta.title : it!.title;
     return (
-      <article key={d.title} className="r-feat" data-testid={`card-differentiator-${i}`}>
+      <article key={d.title} className={`r-feat${shotMeta ? ' r-feat-actual' : ''}`} data-testid={`card-differentiator-${i}`}>
         <div className="r-feat-body">
           <Icon name={d.icon} />
           <div>
@@ -84,17 +94,27 @@ export default function Home({ lang }: { lang: Lang }) {
             <p>{d.description}</p>
           </div>
         </div>
-        <button type="button" className="r-screen-link" aria-haspopup="dialog" aria-label={`${t.ref.viewScreen}: ${it.title}`} onClick={() => enlarge(d.screen)}>
+        {shotMeta && ak ? (
+          <figure className="r-adv">
+            <button type="button" className="r-adv-thumb" aria-haspopup="dialog" aria-label={`${t.differentiators.openActual}: ${label}`} onClick={() => enlarge(`adv:${ak}`)} data-testid={`button-actual-screen-${ak}`}>
+              <img src={adv(ak, 'excerpt')} alt={shotMeta.alt} loading="lazy" decoding="async" />
+            </button>
+            <figcaption><span className="r-adv-badge">{t.differentiators.actualBadge}</span>{label}</figcaption>
+          </figure>
+        ) : (
+        <button type="button" className="r-screen-link" aria-haspopup="dialog" aria-label={`${t.ref.viewScreen}: ${label} (${t.differentiators.conceptBadge})`} onClick={() => enlarge(d.screen)}>
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2" /><path d="M8 21h8m-4-4v4" /></svg>
           {t.ref.viewScreen}
+          <span className="r-concept-tag">{t.differentiators.conceptBadge}</span>
         </button>
+        )}
       </article>
     );
   };
 
   function enlarge(key: string) {
     setOpenKey(key);
-    dialog.current?.showModal();
+    if (dialog.current && !dialog.current.open) dialog.current.showModal();
   }
 
   return (
@@ -267,7 +287,7 @@ export default function Home({ lang }: { lang: Lang }) {
                 <div className="r-mob-screens">
                   {['home', 'decisions', 'brief'].map((key) => (
                     <figure className="r-mob-fig" key={key}>
-                      <button type="button" className="r-mob-preview" onClick={() => setOpenKey(key)} aria-label={`${t.showcase.openScreen}: ${item(key).title}`}>
+                      <button type="button" className="r-mob-preview" onClick={() => enlarge(key)} aria-label={`${t.showcase.openScreen}: ${item(key).title}`}>
                         <img src={shot(key)} alt={item(key).alt} width={473} height={1024} loading="lazy" decoding="async" />
                       </button>
                       <figcaption>{item(key).title}</figcaption>
@@ -314,16 +334,17 @@ export default function Home({ lang }: { lang: Lang }) {
       <dialog
         ref={dialog}
         className="m-screen-dialog"
-        aria-label={opened?.title ?? t.showcase.title}
+        aria-label={openedTitle ?? t.showcase.title}
         onClose={() => setOpenKey(null)}
         onClick={(e) => { if (e.target === e.currentTarget) dialog.current?.close(); }}
       >
         <div className="m-screen-dialog-content">
           <div className="m-screen-dialog-header">
-            <h3>{opened?.title}</h3>
+            <h3>{openedTitle}</h3>
             <button type="button" className="m-lang" autoFocus onClick={() => dialog.current?.close()}>{t.showcase.closeScreen}</button>
           </div>
-          <p className="m-note">{t.showcase.disclaimer}</p>
+          <p className="m-note">{actualShot ? t.differentiators.actualNote : t.showcase.disclaimer}</p>
+          {actualKey && actualShot && <img className="m-screen-actual" src={adv(actualKey, 'full')} alt={actualShot.alt} width={560} height={1112} />}
           {opened && <img src={shot(opened.key)} alt={opened.alt} width={585} height={1266} />}
         </div>
       </dialog>
