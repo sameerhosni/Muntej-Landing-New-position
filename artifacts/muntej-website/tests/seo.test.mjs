@@ -39,7 +39,13 @@ test("translations preserve product surface in each language", () => {
     assert.equal(t.how.steps.length, 4);
     assert.equal(t.promise.items.length, 3);
     assert.equal(t.values.items.length, 4);
-    assert.equal(t.showcase.items.length, 8);
+    assert.equal(t.showcase.items.length, 17);
+    assert.equal(t.differentiators.items.length, 12);
+    const screenKeys = new Set(t.showcase.items.map((screen) => screen.key));
+    assert.equal(screenKeys.size, t.showcase.items.length);
+    for (const feature of t.differentiators.items) {
+      assert.ok(screenKeys.has(feature.screen), `Missing screen for ${feature.title}`);
+    }
     for (const lang of ["ar", "en"]) {
       for (const screen of t.showcase.items) {
         assert.ok(fs.existsSync(new URL(`../public/screens/muntej-${screen.key}-${lang}.webp`, import.meta.url)));

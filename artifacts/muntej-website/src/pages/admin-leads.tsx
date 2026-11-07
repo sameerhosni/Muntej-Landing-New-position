@@ -52,7 +52,7 @@ export default function AdminLeads() {
             {toggle}
             {leads.isSuccess && (
               <>
-                <a href="/api/admin/leads.csv" className="m-btn m-btn-primary" download data-testid="link-export-csv">{a.export}</a>
+                <a href={`${import.meta.env.BASE_URL}api/admin/leads.csv`} className="m-btn m-btn-primary" download data-testid="link-export-csv">{a.export}</a>
                 <button type="button" className="m-btn m-btn-ghost" onClick={doLogout} disabled={logout.isPending} data-testid="button-logout">{a.logout}</button>
               </>
             )}

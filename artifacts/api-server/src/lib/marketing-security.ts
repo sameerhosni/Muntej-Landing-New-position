@@ -25,3 +25,15 @@ export function sameOrigin(origin: string | undefined, host: string | undefined)
     return ["https:", "http:"].includes(url.protocol) && url.host === host;
   } catch { return false; }
 }
+
+// The public /assistant/ reverse proxy retains the browser Origin but may
+// forward its upstream host. Trust only the confirmed HTTPS public origin;
+// never infer trust from Referer, arbitrary forwarded headers or suffixes.
+export function allowedMarketingOrigin(
+  origin: string | undefined,
+  host: string | undefined,
+  fetchSite: string | undefined,
+): boolean {
+  if (fetchSite === "cross-site") return false;
+  return sameOrigin(origin, host) || origin === "https://muntej.app";
+}

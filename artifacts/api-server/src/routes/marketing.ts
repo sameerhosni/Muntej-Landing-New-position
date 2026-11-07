@@ -4,7 +4,7 @@ import { randomBytes } from "node:crypto";
 import { desc, eq, and, gt, lt } from "drizzle-orm";
 import { db, pool, earlyAccessLeads, leadNotifications, marketingEvents, adminSessions, requestLimits } from "@workspace/db";
 import { JoinEarlyAccessBody, AdminLoginBody, TrackEventBody, GetAdminLeadsResponse } from "@workspace/api-zod";
-import { csvCell, digest, fingerprint, matchesPassword, sameOrigin } from "../lib/marketing-security";
+import { csvCell, digest, fingerprint, matchesPassword, allowedMarketingOrigin } from "../lib/marketing-security";
 
 const router: IRouter = Router();
 const cookieName = "muntej_admin";
@@ -18,7 +18,7 @@ router.use((_req, res, next) => {
 
 function originGuard(req: Request, res: Response, next: NextFunction): void {
   const forwarded = req.get("x-forwarded-host")?.split(",")[0]?.trim();
-  if (!sameOrigin(req.get("origin"), forwarded || req.get("host")) || req.get("sec-fetch-site") === "cross-site") {
+  if (!allowedMarketingOrigin(req.get("origin"), forwarded || req.get("host"), req.get("sec-fetch-site"))) {
     res.status(403).json({ error: "forbidden_origin" }); return;
   }
   next();

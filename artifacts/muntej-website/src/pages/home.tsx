@@ -8,6 +8,14 @@ import { LeadForm } from '@/components/lead-form';
 import { useTrack } from '@/lib/site';
 
 const ICONS: Record<string, string[]> = {
+  calendar: ['M4 6h16v14H4z', 'M4 10h16M8 3v4M16 3v4', 'm9 15 2 2 4-4'],
+  scale: ['M12 4v16M6 20h12', 'M5 7h14', 'M5 7l-3 7a3 3 0 0 0 6 0L5 7z', 'M19 7l-3 7a3 3 0 0 0 6 0l-3-7z'],
+  link: ['M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1', 'M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.700 5.700l1-1'],
+  repeat: ['M17 2l4 4-4 4', 'M3 11V9a3 3 0 0 1 3-3h15', 'M7 22l-4-4 4-4', 'M21 13v2a3 3 0 0 1-3 3H3'],
+  chart: ['M4 20V10M10 20V4M16 20v-8M22 20H2'],
+  zap: ['M13 2 4 14h7l-1 8 9-12h-7l1-8z'],
+  route: ['M6 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4z', 'M18 9a2 2 0 1 0 0-4 2 2 0 0 0 0 4z', 'M8 17h6a3 3 0 0 0 0-6h-4a3 3 0 0 1 0-6h6'],
+  folder: ['M3 6a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6z'],
   chat: ['M4 5h16v11H9l-5 4V5z', 'M8 9h8M8 12.5h5'],
   mic: ['M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z', 'M5 11a7 7 0 0 0 14 0', 'M12 18v3'],
   bell: ['M6 9a6 6 0 1 1 12 0c0 6 2 7 2 7H4s2-1 2-7', 'M10 20a2 2 0 0 0 4 0'],
@@ -45,12 +53,19 @@ function Mark({ kind }: { kind: 'x' | 'check' }) {
 export default function Home({ lang }: { lang: Lang }) {
   const t = translations[lang];
   const track = useTrack(lang);
+  const [moreOpen, setMoreOpen] = useState(false);
   const [openKey, setOpenKey] = useState<string | null>(null);
   const dialog = useRef<HTMLDialogElement>(null);
   const base = import.meta.env.BASE_URL;
   const shot = (key: string) => `${base}screens/muntej-${key}-${lang}.webp`;
   const item = (key: string) => t.showcase.items.find((s) => s.key === key)!;
-  const opened = openKey ? item(openKey) : null;
+  type ShotKey = keyof typeof t.differentiators.shots;
+  const adv = (key: string, kind: 'excerpt' | 'full') => `${base}screens/advantages/${key}-${kind}.webp`;
+  const isActual = !!openKey?.startsWith('adv:');
+  const actualKey = isActual ? (openKey!.slice(4) as ShotKey) : null;
+  const actualShot = actualKey ? t.differentiators.shots[actualKey] : null;
+  const opened = openKey && !isActual ? t.showcase.items.find((s) => s.key === openKey) ?? null : null;
+  const openedTitle = actualShot?.title ?? opened?.title;
   const split = t.hero.title.match(/^(.*?(?:…|\.))\s*(.+)$/s);
 
   useEffect(() => {
@@ -64,9 +79,42 @@ export default function Home({ lang }: { lang: Lang }) {
     return () => window.clearTimeout(timer);
   }, []);
 
+  const card = (d: (typeof t.differentiators.items)[number], i: number) => {
+    const ak = d.actual as ShotKey | '';
+    const shotMeta = ak ? t.differentiators.shots[ak] : null;
+    const it = t.showcase.items.find((s) => s.key === d.screen);
+    if (!shotMeta && !it) throw new Error(`Missing advantage screen: ${d.screen}`);
+    const label = shotMeta ? shotMeta.title : it!.title;
+    return (
+      <article key={d.title} className={`r-feat${shotMeta ? ' r-feat-actual' : ''}`} data-testid={`card-differentiator-${i}`}>
+        <div className="r-feat-body">
+          <Icon name={d.icon} />
+          <div>
+            <h3>{d.title}</h3>
+            <p>{d.description}</p>
+          </div>
+        </div>
+        {shotMeta && ak ? (
+          <figure className="r-adv">
+            <button type="button" className="r-adv-thumb" aria-haspopup="dialog" aria-label={`${t.differentiators.openActual}: ${label}`} onClick={() => enlarge(`adv:${ak}`)} data-testid={`button-actual-screen-${ak}`}>
+              <img src={adv(ak, 'excerpt')} alt={shotMeta.alt} loading="lazy" decoding="async" />
+            </button>
+            <figcaption><span className="r-adv-badge">{t.differentiators.actualBadge}</span>{label}</figcaption>
+          </figure>
+        ) : (
+        <button type="button" className="r-screen-link" aria-haspopup="dialog" aria-label={`${t.ref.viewScreen}: ${label} (${t.differentiators.conceptBadge})`} onClick={() => enlarge(d.screen)}>
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2" /><path d="M8 21h8m-4-4v4" /></svg>
+          {t.ref.viewScreen}
+          <span className="r-concept-tag">{t.differentiators.conceptBadge}</span>
+        </button>
+        )}
+      </article>
+    );
+  };
+
   function enlarge(key: string) {
     setOpenKey(key);
-    dialog.current?.showModal();
+    if (dialog.current && !dialog.current.open) dialog.current.showModal();
   }
 
   return (
@@ -218,25 +266,48 @@ export default function Home({ lang }: { lang: Lang }) {
               <p className="m-lead">{t.differentiators.intro}</p>
             </div>
             <div className="r-feats">
-              {t.differentiators.items.map((d, i) => {
-                const c = { key: d.screen };
-                const it = item(c.key);
-                return (
-                  <article key={d.title} className="r-feat" data-testid={`card-differentiator-${i}`}>
-                    <div className="r-feat-body">
-                      <Icon name={d.icon} />
-                      <div>
-                        <h3>{d.title}</h3>
-                        <p>{d.description}</p>
-                      </div>
-                    </div>
-                    <button type="button" className="r-screen-link" aria-haspopup="dialog" aria-label={`${t.ref.viewScreen}: ${it.title}`} onClick={() => enlarge(c.key)}>
-                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2" /><path d="M8 21h8m-4-4v4" /></svg>
-                      {t.ref.viewScreen}
-                    </button>
-                  </article>
-                );
-              })}
+              {t.differentiators.items.slice(0, 6).map((d, i) => card(d, i))}
+            </div>
+            <div className="r-feats r-feats-more" id="feats-more" hidden={!moreOpen}>
+              {t.differentiators.items.slice(6).map((d, i) => card(d, i + 6))}
+            </div>
+            <div className="r-feats-toggle">
+              <button type="button" className="r-more" aria-expanded={moreOpen} aria-controls="feats-more" onClick={() => setMoreOpen((v) => !v)} data-testid="button-features-toggle">
+                {moreOpen ? t.differentiators.showLess : `${t.differentiators.showMore} (${t.differentiators.items.length - 6})`}
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* Mobile app availability */}
+        <section className="r-sec r-mob-sec" id="mobile-app" aria-labelledby="mobile-app-title">
+          <div className="m-wrap">
+            <div className="r-mob">
+              <div className="r-mob-gallery">
+                <div className="r-mob-screens">
+                  {['home', 'decisions', 'brief'].map((key) => (
+                    <figure className="r-mob-fig" key={key}>
+                      <button type="button" className="r-mob-preview" onClick={() => enlarge(key)} aria-label={`${t.showcase.openScreen}: ${item(key).title}`}>
+                        <img src={shot(key)} alt={item(key).alt} width={473} height={1024} loading="lazy" decoding="async" />
+                      </button>
+                      <figcaption>{item(key).title}</figcaption>
+                    </figure>
+                  ))}
+                </div>
+                <p className="r-mob-gallery-note">{t.mobileApp.caption}</p>
+              </div>
+              <div>
+                <span className="r-eyebrow">{t.mobileApp.eyebrow}</span>
+                <h2 className="r-panel-title" id="mobile-app-title">{t.mobileApp.title}</h2>
+                <p className="r-mob-body">{t.mobileApp.body}</p>
+                <div className="r-mob-downloads">
+                  <a href="https://play.google.com/store/apps/details?id=sa.muntej.app&hl=en" target="_blank" rel="noopener noreferrer" className="m-btn m-btn-primary" data-testid="button-download-android">
+                    <svg width="18" height="20" viewBox="0 0 18 20" fill="currentColor" aria-hidden="true"><path d="M1 1.2v17.6L16.2 10 1 1.2Z" /></svg>
+                    {t.mobileApp.androidCta}
+                  </a>
+                  <span className="r-mob-ios">{t.mobileApp.iosSoon}</span>
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -263,16 +334,17 @@ export default function Home({ lang }: { lang: Lang }) {
       <dialog
         ref={dialog}
         className="m-screen-dialog"
-        aria-label={opened?.title ?? t.showcase.title}
+        aria-label={openedTitle ?? t.showcase.title}
         onClose={() => setOpenKey(null)}
         onClick={(e) => { if (e.target === e.currentTarget) dialog.current?.close(); }}
       >
         <div className="m-screen-dialog-content">
           <div className="m-screen-dialog-header">
-            <h3>{opened?.title}</h3>
+            <h3>{openedTitle}</h3>
             <button type="button" className="m-lang" autoFocus onClick={() => dialog.current?.close()}>{t.showcase.closeScreen}</button>
           </div>
-          <p className="m-note">{t.showcase.disclaimer}</p>
+          <p className="m-note">{actualShot ? t.differentiators.actualNote : t.showcase.disclaimer}</p>
+          {actualKey && actualShot && <img className="m-screen-actual" src={adv(actualKey, 'full')} alt={actualShot.alt} width={560} height={1112} />}
           {opened && <img src={shot(opened.key)} alt={opened.alt} width={585} height={1266} />}
         </div>
       </dialog>
