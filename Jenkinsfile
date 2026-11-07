@@ -70,7 +70,7 @@ spec:
         ECR_URL       = "180526211356.dkr.ecr.eu-central-1.amazonaws.com"
         WEB_IMAGE     = "t2hub/muntej-assistant-web"
         API_IMAGE     = "t2hub/muntej-assistant-api"
-        YAML_BRANCH   = "feature/assistant-cluster"
+        YAML_BRANCH   = "main"
         YAML_REPO     = "https://x-bitbucket-api-token-auth@bitbucket.org/t2pms/devops_repo.git"
         K8S_NAMESPACE = "prod-adeed"
         YAML_DIR      = "k8s-manifests/apps/adeed_assistant/prod"
